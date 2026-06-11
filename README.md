@@ -1,5 +1,8 @@
 # TTB Label Verifier (Prototype)
 
+**Live demo:** https://ttb-label-verifier-0uhn.onrender.com
+*(Hosted on Render's free tier — the first load after ~15 minutes of inactivity may take up to a minute while the service wakes.)*
+
 AI-assisted verification of alcohol beverage labels against their TTB applications. An agent enters an application number, uploads the label image, and gets a per-field checklist: ✅ Match, ❌ Mismatch, or ⚠️ Needs review. The agent makes the final call — the tool does the tedious matching.
 
 Built per the V1 application spec: single-label verification, ~5-second results, a UI that needs zero training.
@@ -74,25 +77,39 @@ The tests cover the comparison rules tied to the spec's acceptance criteria: cas
 
 ## Deployment
 
-The repo includes a `render.yaml` Blueprint for [Render](https://render.com)'s free tier:
+The repo includes a `render.yaml` to demonstrate the web app feature, created for [Render](https://render.com) deployment. A new Blueprint can be created using the following steps:
 
 1. Push the repo to GitHub.
 2. In the Render dashboard: **New +** → **Blueprint** → select the repo.
-3. Render reads `render.yaml` and deploys automatically; you get a public `https://ttb-label-verifier.onrender.com`-style URL. Pushes to the default branch redeploy automatically.
+3. Render reads `render.yaml` and deploys automatically. This project is live at **https://ttb-label-verifier-0uhn.onrender.com**.
+4. The app redeploys automatically after pushing to the default GitHub repo.
+
+Workflow: make app changes locally → push to GitHub → refresh website.
 
 Free-tier note: the service spins down after ~15 minutes of inactivity, and the first request afterward can take up to a minute while it wakes. This is platform behavior, not the app — once warm, verification responds well under the 5-second target. Hit the URL once before a demo to warm it up.
 
 ## Project structure
 
 ```
+.vscode/
+  launch.json             VS Code run/debug configurations (F5)
+  settings.json           VS Code workspace settings
 app/
   main.py                 FastAPI app and endpoints
   models.py               Pydantic models
   data/applications.json  Seeded mock COLA records
   services/
-    extraction.py         AI label extraction (Anthropic / demo fallback)
+    extraction.py         Label extraction (demo fixtures; AI boilerplate commented out)
     comparison.py         Deterministic field-matching rules
-  static/index.html       Single-page UI
+  static/index.html       Single-page UI with sample-label gallery
+docs/
+  spec.md                 V1 application specification
+scripts/
+  generate_test_labels.py Generates the test label images
+test_labels/              Six sample labels served in the app's gallery
 tests/
-  test_comparison.py      Unit tests for the matching rules
+  test_comparison.py      Unit tests for matching rules and demo extractor
+.env.example              Environment template (no key needed in V1)
+render.yaml               Render Blueprint for one-click free-tier deployment
+requirements.txt          Python dependencies
 ```
