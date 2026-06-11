@@ -15,12 +15,12 @@ TTB agents review ~150,000 label applications per year, and much of that review 
 
 ### Goals (V1)
 - Verify a **single label** against a **single application** per submission.
-- Extract label text from an uploaded image using AI (vision model or OCR + LLM).
 - Compare five core fields and report per-field results: match, mismatch, or needs review.
 - Return results in roughly **5 seconds or less** (the prior vendor pilot failed at 30–40s and agents abandoned it).
 - A UI simple enough for low-tech-comfort users: one screen, obvious buttons, no hunting.
 
 ### Non-Goals (V1 — documented as future work)
+- Extract label text from an uploaded image using AI (vision model or OCR + LLM). Boilerplate code has been included in the app for a future release.
 - Batch upload of 200–300 applications (high-value future feature; out of scope per "keep it simple").
 - COLA system integration (explicitly excluded by IT).
 - Correction of badly photographed labels (severe angles, glare, poor lighting). V1 should *detect* an unreadable image and tell the agent, not silently fail.

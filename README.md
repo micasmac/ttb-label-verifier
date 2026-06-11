@@ -3,6 +3,8 @@
 **Live demo:** https://ttb-label-verifier-0uhn.onrender.com
 *(Hosted on Render's free tier — the first load after ~15 minutes of inactivity may take up to a minute while the service wakes.)*
 
+**Specification:** the V1 application spec this prototype was built to lives at [`docs/spec.md`](docs/spec.md).
+
 AI-assisted verification of alcohol beverage labels against their TTB applications. An agent enters an application number, uploads the label image, and gets a per-field checklist: ✅ Match, ❌ Mismatch, or ⚠️ Needs review. The agent makes the final call — the tool does the tedious matching.
 
 Built per the V1 application spec: single-label verification, ~5-second results, a UI that needs zero training.
