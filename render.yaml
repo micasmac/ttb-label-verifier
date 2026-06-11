@@ -1,0 +1,27 @@
+# Render Blueprint — deploys the TTB Label Verifier as a free web service.
+#
+# Usage: push this repo to GitHub, then in the Render dashboard choose
+# "New +" → "Blueprint" and select the repo. Render reads this file and
+# provisions everything; no other configuration is needed.
+#
+# Free-tier note: the service spins down after ~15 minutes of inactivity,
+# and the first request afterward takes up to a minute while it wakes.
+# This is platform behavior, not the app (which responds well under the
+# 5-second target once warm).
+
+services:
+  - type: web
+    name: ttb-label-verifier
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /
+    autoDeploy: true # redeploy on every push to the default branch
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.4
+      # Future version — live AI extraction:
+      # Set ANTHROPIC_API_KEY in the Render dashboard (Environment tab) as a
+      # secret, never in this file, after enabling the integration per
+      # app/services/extraction.py.

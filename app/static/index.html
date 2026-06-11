@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>TTB Label Verifier</title>
+<style>
+  /* Design notes: built for compliance agents with widely varying tech comfort.
+     One column, one workflow, big targets, no hidden controls. The results are
+     styled as a checklist — the digital version of the printed checklist agents
+     keep on their desks today. System fonts only: the TTB firewall blocks many
+     outbound domains, so nothing here depends on a CDN. */
+  :root {
+    --ink: #1b2a41;          /* federal navy */
+    --paper: #fafaf7;
+    --line: #d7d5cd;
+    --accent: #1b2a41;
+    --match: #1c7c3c;
+    --mismatch: #b3261e;
+    --review: #9a6700;
+    --muted: #5d6b7a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 17px;
+    line-height: 1.5;
+  }
+  header {
+    background: var(--ink);
+    color: #fff;
+    padding: 1.1rem 1.5rem;
+  }
+  header .eyebrow {
+    font-size: 0.75rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    opacity: 0.75;
+  }
+  header h1 { margin: 0.15rem 0 0; font-size: 1.4rem; font-weight: 650; }
+  main { max-width: 760px; margin: 0 auto; padding: 1.5rem 1.25rem 4rem; }
+
+  .step {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 1.25rem 1.4rem;
+    margin-bottom: 1.25rem;
+  }
+  .step h2 { margin: 0 0 0.25rem; font-size: 1.05rem; }
+  .step p.hint { margin: 0 0 0.9rem; color: var(--muted); font-size: 0.95rem; }
+
+  label { display: block; font-weight: 600; margin-bottom: 0.35rem; }
+  input[type="text"] {
+    width: 100%;
+    font-size: 1.1rem;
+    padding: 0.7rem 0.8rem;
+    border: 2px solid var(--line);
+    border-radius: 8px;
+  }
+  input[type="text"]:focus, button:focus, input[type="file"]:focus {
+    outline: 3px solid #7fa8d9;
+    outline-offset: 2px;
+  }
+  button {
+    font-size: 1.1rem;
+    font-weight: 650;
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 8px;
+    background: var(--accent);
+    color: #fff;
+    cursor: pointer;
+  }
+  button.secondary { background: #fff; color: var(--ink); border: 2px solid var(--ink); }
+  button:disabled { opacity: 0.45; cursor: not-allowed; }
+  .row { display: flex; gap: 0.75rem; align-items: stretch; flex-wrap: wrap; }
+  .row input[type="text"] { flex: 1; min-width: 220px; }
+
+  .app-fields { margin-top: 1rem; border-top: 1px dashed var(--line); padding-top: 0.9rem; }
+  .app-fields dl { margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 0.3rem 1.2rem; }
+  .app-fields dt { color: var(--muted); font-size: 0.95rem; }
+  .app-fields dd { margin: 0; font-weight: 600; }
+
+  input[type="file"] { font-size: 1rem; }
+  .sample-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 0.6rem; }
+  .sample-grid button.sample {
+    background: #fff; border: 2px solid var(--line); border-radius: 8px;
+    padding: 0.4rem; cursor: pointer; text-align: center; color: var(--ink);
+    font-size: 0.78rem; font-weight: 550; line-height: 1.25;
+  }
+  .sample-grid button.sample img { width: 100%; border-radius: 4px; display: block; margin-bottom: 0.35rem; }
+  .sample-grid button.sample.selected { border-color: var(--ink); box-shadow: 0 0 0 2px var(--ink) inset; }
+  .preview { margin-top: 0.9rem; }
+  .preview img { max-width: 100%; max-height: 320px; border: 1px solid var(--line); border-radius: 8px; }
+
+  .message { padding: 0.9rem 1.1rem; border-radius: 8px; margin: 0.75rem 0; font-weight: 550; }
+  .message.error { background: #fdecea; color: var(--mismatch); border: 1px solid #f3c2bf; }
+  .message.info { background: #eef3fa; border: 1px solid #cdd9ea; }
+
+  /* Results checklist */
+  .summary { font-size: 1.15rem; font-weight: 700; margin: 0 0 0.9rem; }
+  .checklist { list-style: none; margin: 0; padding: 0; }
+  .checklist li {
+    border-top: 1px solid var(--line);
+    padding: 0.9rem 0.2rem;
+    display: grid;
+    grid-template-columns: 2.2rem 1fr;
+    gap: 0.2rem 0.8rem;
+  }
+  .checklist .mark { font-size: 1.4rem; line-height: 1.2; grid-row: span 3; }
+  .checklist .field-name { font-weight: 700; }
+  .checklist .values { font-size: 0.95rem; color: var(--muted); }
+  .checklist .values strong { color: var(--ink); }
+  .checklist .note { font-size: 0.95rem; }
+  li.match .mark { color: var(--match); }
+  li.mismatch .mark { color: var(--mismatch); }
+  li.mismatch .field-name { color: var(--mismatch); }
+  li.needs_review .mark { color: var(--review); }
+  li.needs_review .field-name { color: var(--review); }
+  .elapsed { color: var(--muted); font-size: 0.9rem; margin-top: 0.75rem; }
+
+  .spinner {
+    display: inline-block; width: 1.1rem; height: 1.1rem; vertical-align: -3px;
+    border: 3px solid #fff; border-top-color: transparent; border-radius: 50%;
+    animation: spin 0.8s linear infinite; margin-right: 0.5rem;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .spinner { animation: none; } }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+<header>
+  <div class="eyebrow">TTB &middot; Compliance Division &middot; Prototype</div>
+  <h1>Label Verifier</h1>
+</header>
+
+<main>
+  <!-- Step 1: look up the application -->
+  <section class="step" id="step-lookup">
+    <h2>Step 1 — Find the application</h2>
+    <p class="hint">Enter the application number, then press Look up. Demo numbers: TTB-2026-0001 through TTB-2026-0005.</p>
+    <label for="appNumber">Application number</label>
+    <div class="row">
+      <input type="text" id="appNumber" placeholder="TTB-2026-0001" autocomplete="off" />
+      <button id="lookupBtn">Look up</button>
+    </div>
+    <div id="lookupMessage"></div>
+    <div class="app-fields hidden" id="appFields">
+      <dl>
+        <dt>Brand name</dt><dd id="f-brand"></dd>
+        <dt>Class / type</dt><dd id="f-class"></dd>
+        <dt>Alcohol content</dt><dd id="f-abv"></dd>
+        <dt>Net contents</dt><dd id="f-net"></dd>
+        <dt>Government warning</dt><dd>Checked automatically against the required text</dd>
+      </dl>
+    </div>
+  </section>
+
+  <!-- Step 2: upload the label -->
+  <section class="step hidden" id="step-upload">
+    <h2>Step 2 — Upload the label image</h2>
+    <p class="hint">JPEG or PNG, up to 10&nbsp;MB. A straight-on, well-lit photo works best.</p>
+    <input type="file" id="imageInput" accept="image/jpeg,image/png,image/webp" />
+    <div class="samples hidden" id="samples">
+      <p class="hint" style="margin:1rem 0 0.5rem;">Or pick a sample label from the repo's <code>test_labels/</code> folder:</p>
+      <div class="sample-grid" id="sampleGrid"></div>
+    </div>
+    <div class="preview" id="preview"></div>
+    <div style="margin-top:1rem;">
+      <button id="verifyBtn" disabled>Verify label</button>
+    </div>
+    <div id="verifyMessage"></div>
+  </section>
+
+  <!-- Step 3: results -->
+  <section class="step hidden" id="step-results">
+    <h2>Step 3 — Results</h2>
+    <p class="summary" id="summary"></p>
+    <ul class="checklist" id="checklist"></ul>
+    <p class="elapsed" id="elapsed"></p>
+    <button class="secondary" id="resetBtn">Verify another label</button>
+  </section>
+</main>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const MARKS = { match: "\u2705", mismatch: "\u274C", needs_review: "\u26A0\uFE0F" };
+  const STATUS_WORDS = { match: "Match", mismatch: "Mismatch", needs_review: "Needs review" };
+  let currentApp = null;
+  let currentFile = null;
+
+  function showMessage(el, text, kind) {
+    el.innerHTML = text
+      ? `<div class="message ${kind}" role="alert">${text}</div>`
+      : "";
+  }
+
+  async function lookup() {
+    const number = $("appNumber").value.trim();
+    if (!number) {
+      showMessage($("lookupMessage"), "Enter an application number first.", "error");
+      return;
+    }
+    showMessage($("lookupMessage"), "Looking up\u2026", "info");
+    try {
+      const res = await fetch(`/api/applications/${encodeURIComponent(number)}`);
+      const data = await res.json();
+      if (!res.ok) {
+        showMessage($("lookupMessage"), data.detail || "Application not found.", "error");
+        $("appFields").classList.add("hidden");
+        $("step-upload").classList.add("hidden");
+        return;
+      }
+      currentApp = data;
+      $("f-brand").textContent = data.brand_name;
+      $("f-class").textContent = data.class_type;
+      $("f-abv").textContent = data.alcohol_content;
+      $("f-net").textContent = data.net_contents;
+      $("appFields").classList.remove("hidden");
+      showMessage($("lookupMessage"), "");
+      $("step-upload").classList.remove("hidden");
+      $("step-results").classList.add("hidden");
+    } catch {
+      showMessage($("lookupMessage"), "Could not reach the server. Please try again.", "error");
+    }
+  }
+
+  function onFileChosen() {
+    const file = $("imageInput").files[0];
+    currentFile = file || null;
+    $("verifyBtn").disabled = !currentFile;
+    $("preview").innerHTML = "";
+    clearSampleSelection();
+    if (file) {
+      const img = document.createElement("img");
+      img.alt = "Preview of the uploaded label";
+      img.src = URL.createObjectURL(file);
+      $("preview").appendChild(img);
+    }
+  }
+
+  function clearSampleSelection() {
+    document.querySelectorAll(".sample.selected").forEach((b) => b.classList.remove("selected"));
+  }
+
+  async function loadSamples() {
+    try {
+      const res = await fetch("/api/test-labels");
+      const samples = await res.json();
+      if (!Array.isArray(samples) || samples.length === 0) return;
+      const grid = $("sampleGrid");
+      for (const s of samples) {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "sample";
+        btn.innerHTML = `<img src="${s.url}" alt="" loading="lazy" />${escapeHtml(s.name)}`;
+        btn.addEventListener("click", () => selectSample(s, btn));
+        grid.appendChild(btn);
+      }
+      $("samples").classList.remove("hidden");
+    } catch { /* gallery is optional — ignore failures */ }
+  }
+
+  async function selectSample(sample, btn) {
+    try {
+      const res = await fetch(sample.url);
+      const blob = await res.blob();
+      currentFile = new File([blob], sample.filename, { type: blob.type || "image/png" });
+      $("imageInput").value = "";
+      $("verifyBtn").disabled = false;
+      clearSampleSelection();
+      btn.classList.add("selected");
+      $("preview").innerHTML = "";
+      const img = document.createElement("img");
+      img.alt = `Preview of sample label: ${sample.name}`;
+      img.src = URL.createObjectURL(blob);
+      $("preview").appendChild(img);
+    } catch {
+      showMessage($("verifyMessage"), "Could not load that sample label. Please try another or upload a file.", "error");
+    }
+  }
+
+  async function verify() {
+    if (!currentApp || !currentFile) return;
+    const btn = $("verifyBtn");
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Checking the label\u2026';
+    showMessage($("verifyMessage"), "");
+
+    const form = new FormData();
+    form.append("application_number", currentApp.application_number);
+    form.append("image", currentFile);
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
+
+    try {
+      const res = await fetch("/api/verify", { method: "POST", body: form, signal: controller.signal });
+      const data = await res.json();
+      if (!res.ok) {
+        showMessage($("verifyMessage"), data.detail || "Verification failed. Please try again.", "error");
+        return;
+      }
+      renderResults(data);
+    } catch (err) {
+      const msg = err.name === "AbortError"
+        ? "This is taking longer than expected. Please try again."
+        : "Could not reach the server. Please try again.";
+      showMessage($("verifyMessage"), msg, "error");
+    } finally {
+      clearTimeout(timeout);
+      btn.disabled = false;
+      btn.textContent = "Verify label";
+    }
+  }
+
+  function renderResults(data) {
+    $("summary").textContent = data.summary;
+    const list = $("checklist");
+    list.innerHTML = "";
+    for (const r of data.results) {
+      const li = document.createElement("li");
+      li.className = r.status;
+      const extracted = r.extracted_value ?? "(not found on label)";
+      li.innerHTML = `
+        <span class="mark" aria-hidden="true">${MARKS[r.status]}</span>
+        <span class="field-name">${r.label} — ${STATUS_WORDS[r.status]}</span>
+        <span class="values">Application: <strong>${escapeHtml(r.application_value)}</strong><br/>
+        Label: <strong>${escapeHtml(extracted)}</strong></span>
+        ${r.note ? `<span class="note">${escapeHtml(r.note)}</span>` : ""}`;
+      list.appendChild(li);
+    }
+    $("elapsed").textContent = `Processed in ${data.elapsed_seconds} seconds.`;
+    $("step-results").classList.remove("hidden");
+    $("step-results").scrollIntoView({ behavior: "smooth" });
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, (c) =>
+      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  }
+
+  function reset() {
+    currentFile = null;
+    $("imageInput").value = "";
+    $("preview").innerHTML = "";
+    $("verifyBtn").disabled = true;
+    clearSampleSelection();
+    $("step-results").classList.add("hidden");
+    $("step-upload").scrollIntoView({ behavior: "smooth" });
+  }
+
+  $("lookupBtn").addEventListener("click", lookup);
+  $("appNumber").addEventListener("keydown", (e) => { if (e.key === "Enter") lookup(); });
+  $("imageInput").addEventListener("change", onFileChosen);
+  $("verifyBtn").addEventListener("click", verify);
+  $("resetBtn").addEventListener("click", reset);
+  loadSamples();
+</script>
+</body>
+</html>

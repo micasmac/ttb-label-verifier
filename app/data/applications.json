@@ -1,0 +1,42 @@
+{
+  "TTB-2026-0001": {
+    "application_number": "TTB-2026-0001",
+    "brand_name": "OLD TOM DISTILLERY",
+    "class_type": "Kentucky Straight Bourbon Whiskey",
+    "alcohol_content": "45% Alc./Vol. (90 Proof)",
+    "net_contents": "750 mL",
+    "applicant": "Old Tom Distillery LLC, Bardstown, KY"
+  },
+  "TTB-2026-0002": {
+    "application_number": "TTB-2026-0002",
+    "brand_name": "Stone's Throw",
+    "class_type": "India Pale Ale",
+    "alcohol_content": "6.8% Alc./Vol.",
+    "net_contents": "355 mL",
+    "applicant": "Stone's Throw Brewing Co., Portland, OR"
+  },
+  "TTB-2026-0003": {
+    "application_number": "TTB-2026-0003",
+    "brand_name": "Cascade Mist",
+    "class_type": "Washington State Riesling",
+    "alcohol_content": "11.5% Alc./Vol.",
+    "net_contents": "750 mL",
+    "applicant": "Cascade Mist Vineyards, Yakima, WA"
+  },
+  "TTB-2026-0004": {
+    "application_number": "TTB-2026-0004",
+    "brand_name": "Harbor Lights",
+    "class_type": "London Dry Gin",
+    "alcohol_content": "47% Alc./Vol. (94 Proof)",
+    "net_contents": "1 L",
+    "applicant": "Harbor Lights Spirits, Seattle, WA"
+  },
+  "TTB-2026-0005": {
+    "application_number": "TTB-2026-0005",
+    "brand_name": "Rio Dorado",
+    "class_type": "Tequila Reposado",
+    "alcohol_content": "40% Alc./Vol. (80 Proof)",
+    "net_contents": "750 mL",
+    "applicant": "Rio Dorado Imports, San Diego, CA"
+  }
+}
